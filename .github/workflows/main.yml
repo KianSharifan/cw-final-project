@@ -1,39 +1,26 @@
-name: Release Compiled PDF 
+name: Build LaTeX on Tag
+
 on:
   push:
     tags:
-      - '*.*.*'
+      - 'v*'  # Trigger on any tag that starts with 'v'
 
 jobs:
-  build_latex:
-    permissions: write-all
+  build:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Set up Git repository
-        uses: actions/checkout@v2
-      - name: Compile LaTeX document
-        uses: xu-cheng/latex-action@v2
-        with:
-          root_file: main.tex
+    - name: Checkout repository
+      uses: actions/checkout@v3
 
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
-          draft: false
-          prerelease: false
+    - name: Set up TeX Live
+      uses: dante-ev/latex-action@v2
 
-      - name: Upload Release Asset
-        id: upload-release-asset 
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }} 
-          asset_path: ./main.pdf
-          asset_name: main.pdf
-          asset_content_type: pdf
+    - name: Compile LaTeX document
+      run: latexmk -pdf -interaction=nonstopmode -file-line-error main.tex
+
+    - name: Upload compiled PDF
+      uses: actions/upload-artifact@v3
+      with:
+        name: compiled-pdf
+        path: main.pdf
